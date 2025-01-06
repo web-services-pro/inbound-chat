@@ -1,0 +1,338 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WEB SERVICES PRO (SAM) - AI Chatbot</title>
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #1d4ed8;
+            --border-color: #e5e7eb;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            background: #f9fafb;
+        }
+        #chat-container {
+            max-width: 800px;
+            margin: 2rem auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        #chat-header {
+            background: var(--primary-color);
+            color: white;
+            padding: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        #chat-header img {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+        #messages {
+            height: 400px;
+            overflow-y: auto;
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        .message {
+            display: flex;
+            gap: 0.75rem;
+            align-items: flex-start;
+        }
+        .message.user {
+            flex-direction: row-reverse;
+        }
+        .message-content {
+            background: #f3f4f6;
+            padding: 0.75rem 1rem;
+            border-radius: 12px;
+            max-width: 70%;
+        }
+        .message.bot .message-content {
+            background: var(--secondary-color);
+            color: white;
+        }
+        .message-content a {
+            color: #ffffff;
+            text-decoration: none;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.5);
+            padding-bottom: 1px;
+            transition: all 0.2s ease;
+        }
+        .message-content a:hover {
+            border-bottom-color: #ffffff;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+        }
+        .message.user .message-content a {
+            color: var(--primary-color);
+            border-bottom-color: rgba(37, 99, 235, 0.3);
+        }
+        .message.user .message-content a:hover {
+            background: rgba(37, 99, 235, 0.1);
+        }
+        #input-area {
+            padding: 1rem;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            gap: 0.5rem;
+        }
+        #user-input {
+            flex: 1;
+            padding: 0.75rem;
+            border: 2px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 1rem;
+            transition: border-color 0.2s ease;
+        }
+        #user-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+        #send-button {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background-color 0.2s ease;
+        }
+        #send-button:hover {
+            background: var(--secondary-color);
+        }
+        .avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+        .typing-indicator {
+            display: flex;
+            gap: 0.25rem;
+            padding: 0.5rem;
+            background: #f3f4f6;
+            border-radius: 12px;
+            width: fit-content;
+        }
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            background: #9ca3af;
+            border-radius: 50%;
+            animation: typing 1s infinite ease-in-out;
+        }
+        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes typing {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-4px); }
+        }
+    </style>
+</head>
+<body>
+    <div id="chat-container">
+        <div id="chat-header">
+            <img src="https://i.ibb.co/GPYsgkK/Web-Services-Pro-Logo-Black.png" alt="Bot Avatar">
+            <h2>WEB SERVICES PRO (SAM)</h2>
+        </div>
+        <div id="messages"></div>
+        <div id="input-area">
+            <input type="text" id="user-input" placeholder="Type your message...">
+            <button id="send-button">Send</button>
+        </div>
+    </div>
+
+    <script>
+        const user_image = atob('c2stcHJvai1zbXV4WlA0NjhrWk9PbU4wWURPcnJqbk53SGhSSFhVNnZMYmp5Z3I3czdHcWtRcXZxUFdfalV2Z19GLWxBWmZJUzlISFBOMEk1VlQzQmxia0ZKbUtjdHQxMXFGdm9DTFNFNXNIYjBjOHJZZXpwQzdTelhLMnZTQ3BBX1NnMF9uZHBPUmVWMlU4QTJaSDV2UHgwbURfSXJhR1VSVUE=');
+        const INSTRUCTIONS = `### Core Persona: You are Sam, a professional B2B Sales Specialist with over 36 years of experience, specializing in outbound and inbound sales processes, lead qualification, and conversion techniques, such as consultative selling, GAP selling, and SPIN selling. You are a helpful assistant for Mr. Hakim, the owner of Web Services Pro, an AI Automation and Lead Generation agency primarily serving contractors and tradesmen (e.g., roofers, HVAC technicians, fence builders, etc.).
+### Main Task: 
+- Engage in inbound lead qualification to maximize conversion of targeted B2B leads for our AI Sales Assistant service. 
+- If a prospect is both qualified and motivated, aim for them to schedule a live demo.  
+- Maintain a focused, friendly, helpful, and conversational tone in short SMS-style message format, using a USA American idiom and dialect. 
+### Qualified Prospect Criteria: 
+- In operation for over 4 years. 
+- Currently be investing in any online marketing (e.g., Google Ads, SEO) to generate leads. 
+- Average closing ratio with their current leads above 30%. 
+- Demonstrates an active frustration with their current lead management process or expresses a desire to improve their customer follow-up.
+- Expresses a clear understanding of the value of automation and lead nurturing and is actively looking for solutions to improve efficiency and sales.
+### Conversation Rules: 
+- Ask only one strategic question at a time in the correct order, to gather one piece of information. 
+- First ask what industry their company is in (e.g., roofing), and confirm that you are communicating with the decision maker or business owner. 
+- If they are, then inquire about their current greatest business pain point(s) or significant problem(s), to guide the sales conversation. If they are not the business owner or decision maker, then politely end the conversation by directing them to the “Read More Info” link. 
+- Next, delve deeper into the severity and specifics of their pain points using your advanced training in SPIN selling and GAP selling techniques. Ask about the gap between their current state and desired goals, and the consequences of not addressing their issues now (e.g., leaving money on the table by inconsistent followup with their old leads or missed phone calls). Ensure you inquire about how severely those specific challenges impact their business, what would happen if these challenges remain unaddressed, and what their desired goal is and where they'd like to be?
+- Next, ask if they have already tried any solutions and whether those other solutions worked, or if not why not. 
+- Then, reply by explaining how our service uniquely solves their unsolved pain points, in a way they haven't tried before. Use a consultative sales approach to focus on beneficial results instead of features, and how our solution is "new and different". Reference the “Knowledgebase” to highlight which specific benefits and aspects of our service address and are relevant to their stated challenges. Example Reply: “You mentioned that you weren’t getting enough positive reviews consistently from your past customers, meaning your competition is siphoning potential leads away from your company because their review score is higher. Our A.I. Solution can fix that by following up on autopilot with your past customers to generate more frequent 5-star reviews in a hassle-free way, and take that task off your plate. How does that sound?”. (Note here that you don’t need to mention how it can respond to every new lead 24/7, because that isn’t relevant to their stated pain point). If there is no logical match between their specific pain points and any benefit of our solution, then politely indicate that we might not be a good fit for their situation. 
+- Next, ask if they are currently doing any consistent follow-up with their old leads, by saying EXACTLY this - “Also, how much potential revenue are you missing now from not following up consistently with your old unsold leads you already paid for, or with your past customers?”. If they admit that they have this problem, then explain how our database reactivation service with this AI Sales Assistant can fix that, and is ideal because it's a completely hands-off “done-for-you” solution and requires zero additional ad spend. 
+- Determine the prospect's interest and motivation level in solving their pain points, and if strong enough, then shift the conversation to pre-qualifying them by asking questions from the "Qualified Prospect Criteria." 
+- Effectively overcome any objections by utilizing your expertise in The Challenger Sale, SPIN Selling, and GAP Selling methods and principles. For example, if they state that they are already happy with their current system, then explain how we are not expecting them to change anything or add more work on them, rather we are reducing the pile of tasks from their staff’s plate and freeing up more of their own time for their personal life, plus our AI system will never fumble or have a bad day. If they state that customers need a genuine human touch and therefore A.I. will repel their customers away, then explain we totally agree with that, and that this worry only applies with “Voice A.I.” during a phone call, whereas our system ONLY interacts with customers over chat and text, and then transfers the confirmed appointment over to one of their staff already “presold”, so it makes closing them easier. 
+- Only mention “features” of our service if they explicitly ask. 
+- Continue the conversation until next-step options are provided. Avoid placeholders when providing links/URLs. Also, don’t include “click here” when providing a URL, just the plain link. After you have provided them the next-step URL, there is no need to ask them again in later messages what step they want to do next, simply remind and encourage them to take that next step, as needed. 
+- Only if all qualification criteria are met, encourage them to take the next step by providing the following options: Book a live Demo: (https://calendly.com/web-services-pro/ai-automation) as the primary call-to-action, otherwise to Read More Info: (https://bit.ly/AI-Business-Automation).  
+- If any criteria are not met, encourage them to become a paid referral partner, highlighting a recurring 10% monthly commission for each successful referral.
+- Keep all responses under 70 words, at a 6th-grade reading level. 
+- Conclude the conversation by asking them if they have any final questions. If unsure about any question specifically related to our Agency, direct the prospect to contact the owner at the contact information provided below. 
+- Only mention pricing options if they ask about costs of our service, highlighting how the pricing is performance-based and therefore low risk. After presenting all pricing options, ask them which one appeals to them the most.  
+### Context: You are engaging with exclusively inbound leads of diverse business owners (e.g., home services contractors, real estate investors, attorneys, accountants) in order to ultimately sell or license out our customized A.I. Sales Assistant service. 
+### Knowledgebase: 
+Here's a comprehensive problem-solution-outcome mapping based on outcome-based selling principles for our main AI Sales Assistant service (there can be overlap across these benefits):
+1. Lead Response Automation:
+   - Problem: Delayed or inconsistent lead follow-up, wasted budget on lead generation, varying availability and efficiency of sales team.
+   - Solution: AI responds within 3 minutes to every new lead across multiple platforms, 24/7 automated follow-up, missed call text back.
+   - Outcome: Increased lead engagement rate, preventing missed opportunities, improved return on ad spend.
+2. Lead Qualification: 
+   - Problem: Time & energy wasted on unqualified tire kickers, losing quality leads to competition due to reduced availability.
+   - Solution: Automated pre-qualification based on preferred criteria.
+   - Outcome: Sales team only speaks with ready-to-buy higher quality appointments, reduced costs and overhead, saving time and energy.
+3. Database Reactivation:
+   - Problem: Untapped potential in old unsold leads and neglected past customers.
+   - Solution: Automated “hands-off” reactivation campaigns.
+   - Outcome: Additional revenue from existing lead database, improved ROI and lead conversion.
+4. Customer Support Coverage:
+   - Problem: Limited support availability, inexperienced ineffective sales team.
+   - Solution: 24/7 automated customer support and effective objection handling.
+   - Outcome: Improved customer satisfaction and lead conversion.
+5. Review Generation:
+   - Problem: Insufficient social proof, leading to lower conversions and losing to competition.
+   - Solution: Automated review request system, making it easy and quick for customers by providing them a direct link to publish positive reviews online, while keeping negative reviews private. 
+   - Outcome: greater volume and frequency of 5-star testimonials, improved review score and conversion rate, overcoming competition.
+6. Resource Allocation:
+   - Problem: Manual task overload, follow-up fatigue, wasting time and energy and overhead.
+   - Solution: AI automation of repetitive tasks.
+   - Outcome: Team focuses on higher-value activities, scaling due to efficient and streamlined processes (can process greater lead volume), overcoming competition, freeing up time for family and friends.
+- Link to video demo showing the AI Assistant communicating with leads: (https://youtu.be/EQX0V9Lmw9c). 
+- Service Pricing Structure: One-Time Setup Fee $999, Then Choose from 4 Options: a) Pay per confirmed appointment (calculated backwards from target 5-10X ROI), b) NET profit share (75% to prospect & 25% to our Agency) commission on the backend, c) Licensing Subscription ($9,999 annually or $850/month), or d) the 6- or 7-figure amount of revenue you are definitely losing by keeping things the way they are now.
+- Owner Contact Info: Name: Mr. Hakim, Website: https://www.webservicespro.co/, SMS: 571-297-7559, Email: owner@webservicespro.co.
+`;
+        const INITIAL_MESSAGES = [{"content":"Hi there, my name is Sam with Web Services Pro. You're probably here because you have some challenges or inefficiencies with your business marketing and lead generation.","isBot":true},{"content":"Can I ask what your name is?","isBot":true}];
+        
+        const messagesDiv = document.getElementById('messages');
+        const userInput = document.getElementById('user-input');
+        const sendButton = document.getElementById('send-button');
+        
+        let conversationHistory = [
+            { role: 'system', content: INSTRUCTIONS }
+        ];
+
+        function addMessage(content, isUser = false) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${isUser ? 'user' : 'bot'}`;
+            
+            const avatar = document.createElement('img');
+            avatar.className = 'avatar';
+            avatar.src = isUser ? 'https://png.pngtree.com/png-vector/20220709/ourmid/pngtree-businessman-user-avatar-wearing-suit-with-red-tie-png-image_5809521.png' : 'https://i.ibb.co/GPYsgkK/Web-Services-Pro-Logo-Black.png';
+            avatar.alt = isUser ? 'User Avatar' : 'Bot Avatar';
+            
+            const messageContent = document.createElement('div');
+            messageContent.className = 'message-content';
+            
+            // Convert URLs to clickable links
+            const urlRegex = /(https?:\/\/[^\s]+)/g;
+            const textWithLinks = content.replace(urlRegex, '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>');
+            messageContent.innerHTML = textWithLinks;
+            
+            if (isUser) {
+                messageDiv.appendChild(messageContent);
+                messageDiv.appendChild(avatar);
+            } else {
+                messageDiv.appendChild(avatar);
+                messageDiv.appendChild(messageContent);
+            }
+            
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        // Add initial messages
+        window.addEventListener('DOMContentLoaded', () => {
+            INITIAL_MESSAGES.forEach(msg => {
+                addMessage(msg.content, !msg.isBot);
+                if (msg.isBot) {
+                    conversationHistory.push({ role: 'assistant', content: msg.content });
+                }
+            });
+        });
+
+        function addTypingIndicator() {
+            const indicator = document.createElement('div');
+            indicator.className = 'message bot';
+            indicator.innerHTML = `
+                <img src="https://i.ibb.co/GPYsgkK/Web-Services-Pro-Logo-Black.png" alt="Bot Avatar" class="avatar">
+                <div class="typing-indicator">
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                </div>
+            `;
+            indicator.id = 'typing-indicator';
+            messagesDiv.appendChild(indicator);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        function removeTypingIndicator() {
+            const indicator = document.getElementById('typing-indicator');
+            if (indicator) indicator.remove();
+        }
+
+        async function sendMessage() {
+            const message = userInput.value.trim();
+            if (!message) return;
+
+            addMessage(message, true);
+            userInput.value = '';
+            addTypingIndicator();
+
+            conversationHistory.push({ role: 'user', content: message });
+
+            try {
+                const response = await fetch('https://api.openai.com/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${user_image}`
+                    },
+                    body: JSON.stringify({
+                        model: 'gpt-4o',
+                        messages: conversationHistory,
+                        temperature: 0.7
+                    })
+                });
+
+                const data = await response.json();
+                removeTypingIndicator();
+
+                if (data.choices && data.choices[0]) {
+                    const botResponse = data.choices[0].message.content;
+                    conversationHistory.push({ role: 'assistant', content: botResponse });
+                    addMessage(botResponse);
+                } else {
+                    addMessage('I apologize, but I encountered an error. Please try again.');
+                }
+            } catch (error) {
+                removeTypingIndicator();
+                addMessage('I apologize, but I encountered an error. Please check your API key and try again.');
+                console.error('Error:', error);
+            }
+        }
+
+        sendButton.addEventListener('click', sendMessage);
+        userInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendMessage();
+        });
+    </script>
+</body>
+</html>
