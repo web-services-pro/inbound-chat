@@ -146,6 +146,7 @@
             min-width: 0;
             transition: border-color 0.2s ease;
             background: white;
+            -webkit-appearance: none;font-size: 16px;
         }
         
         #user-input:focus {
@@ -229,6 +230,15 @@
             
             #input-area {
                 padding: 0.5rem;
+            }
+        }
+        @media screen and (max-width: 480px) {
+            input, select, textarea {
+                font-size: 16px; 
+            }
+            
+            #send-button {
+                font-size: 16px; 
             }
         }
     </style>
